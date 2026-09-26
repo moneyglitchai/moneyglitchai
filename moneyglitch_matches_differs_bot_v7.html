@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>MoneyGlitch AI — Matches & Differs v2</title>
+<style>
+:root{--bg:#050505;--panel:#0d0d0d;--gold:#f5c542;--gold2:#ffe27a;--white:#f5f5f5;--muted:#999;--green:#35e27a;--red:#ff4d5a;--line:#3b321b}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#181205 0,#050505 44%);color:var(--white);font-family:Arial,Helvetica,sans-serif}
+.wrap{max-width:1200px;margin:auto;padding:18px}.title{font-size:27px;font-weight:900;color:var(--gold)}.sub{color:#aaa;margin:4px 0 18px}
+.grid{display:grid;grid-template-columns:350px 1fr;gap:14px}.card{background:linear-gradient(180deg,#111,#090909);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 8px 30px #000}
+h3{margin:0 0 12px;color:var(--gold);font-size:14px;text-transform:uppercase;letter-spacing:1px}.field{margin-bottom:9px}.field label{display:block;color:#ccc;font-size:11px;margin-bottom:5px}.field input,.field select{width:100%;background:#1a1a1a;border:1px solid #484848;color:#fff;border-radius:9px;padding:10px;outline:0}.field input:focus,.field select:focus{border-color:var(--gold)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}button{border:0;border-radius:9px;padding:11px 14px;font-weight:900;cursor:pointer}.gold{background:var(--gold);color:#000}.dark{background:#252525;color:#fff;border:1px solid #555}.redbtn{background:#341014;color:#ff9299;border:1px solid #70252d}
+.status{display:flex;align-items:center;gap:8px;margin-top:12px;font-weight:800}.dot{width:9px;height:9px;border-radius:50%;background:#555}.dot.on{background:var(--green);box-shadow:0 0 10px var(--green)}
+.toggle{display:flex;align-items:center;justify-content:space-between;background:#171717;border:1px solid #333;border-radius:9px;padding:9px;margin-bottom:8px}.toggle span{font-size:12px}.toggle input{accent-color:var(--gold);width:18px;height:18px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.kpi{background:#111;border:1px solid #292929;border-radius:10px;padding:10px}.kpi b{display:block;color:var(--gold);font-size:18px}.kpi small{color:#999}
+.digits{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}.digit{background:#111;border:1px solid #292929;border-radius:9px;padding:9px 4px;text-align:center}.digit .n{font-size:18px;font-weight:900;color:var(--gold)}.digit .p{font-size:10px;color:#aaa;margin-top:3px}.digit.target{border-color:var(--gold);box-shadow:0 0 12px #8a6c1d}.digit.target .n{color:#fff}
+.signal{margin-top:10px;background:#17130a;border:1px solid #725c20;border-radius:10px;padding:12px}.signal strong{color:var(--gold);font-size:18px}.signal .meta{color:#bbb;font-size:12px;margin-top:5px}
+.log{height:285px;overflow:auto;background:#050505;border:1px solid #222;border-radius:9px;padding:9px;font:12px Consolas,monospace}.log div{padding:3px 0;border-bottom:1px solid #111}.win{color:var(--green)}.loss{color:var(--red)}.warn{color:var(--gold)}
+.note{font-size:11px;color:#888;line-height:1.45;margin-top:9px}.small{font-size:10px;color:#777}.locked{opacity:.65}
+.historyWrap{overflow:auto;border:1px solid #222;border-radius:9px;background:#050505}.history{width:100%;border-collapse:collapse;min-width:760px;font-size:11px}.history th{position:sticky;top:0;background:#17130a;color:var(--gold);text-align:left;padding:9px;border-bottom:1px solid #4a3b16}.history td{padding:8px;border-bottom:1px solid #151515;color:#ddd;white-space:nowrap}.history tr.pending td{color:#bbb}.history tr.win td{color:var(--green)}.history tr.loss td{color:var(--red)}.history tr.rejected td{color:var(--gold)}
+@media(max-width:850px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.digits{grid-template-columns:repeat(5,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="title">MONEYGLITCH AI — MATCHES, DIFFERS, RISE/FALL & ACCUMULATOR v7</div>
+<div class="sub">Current Deriv Options API • multi-strategy multi-pair scanner • synchronized spam entries</div>
+
+<div class="grid">
+<div>
+<div class="card">
+<h3>Deriv Connection</h3>
+<div class="field"><label>App ID</label><input id="appId" placeholder="Your current Deriv App ID"></div>
+<div class="field"><label>Personal Access Token (PAT)</label><input id="token" type="password" placeholder="PAT with trade scope"></div>
+<div class="field"><label>ACCOUNT TYPE</label>
+<select id="accountType">
+<option value="demo" selected>DEMO ACCOUNT — Virtual Funds</option>
+<option value="real">REAL ACCOUNT — Real Money</option>
+</select>
+</div>
+<div class="field"><label>Account ID</label><select id="accountId"><option value="">Connect to load accounts</option></select></div>
+<div class="buttons"><button class="gold" id="connectBtn">CONNECT</button><button class="dark" id="disconnectBtn">DISCONNECT</button></div>
+<div class="status"><i id="dot" class="dot"></i><span id="connText">Disconnected</span></div>
+<div id="accountWarning" class="note warn" style="display:none">REAL ACCOUNT selected. This bot can place real-money contracts when started. Verify the selected account before enabling Auto Trading.</div>
+<div class="note">Select DEMO or REAL. The bot retrieves the accounts linked to your PAT, selects the account type you chose, requests a short-lived OTP for that account, then connects to Deriv's corresponding authenticated WebSocket.</div>
+</div>
+
+<div class="card" style="margin-top:14px">
+<h3>Bot Controls</h3>
+<div class="field"><label>SYMBOL / PAIR</label><select id="symbol"><option value="AUTO" selected>AUTO — SCAN ALL VALID PAIRS</option></select></div>
+<div class="toggle"><span>SCAN ALL VALID PAIRS</span><input id="scanAll" type="checkbox" checked></div>
+<div class="field"><label>TRADING STRATEGY</label><select id="strategy"><option value="DIGITS" selected>DIGITS — MATCHES / DIFFERS</option><option value="RISEFALL">RISE / FALL — AUTO SCANNER</option><option value="ACCUMULATOR">ACCUMULATOR — AUTO SCANNER</option></select></div>
+<div class="field" id="digitModeWrap"><label>Digit Contract</label><select id="mode"><option value="DIGITDIFF" selected>DIFFERS</option><option value="DIGITMATCH">MATCHES</option></select></div>
+<div class="field" id="rfModeWrap" style="display:none"><label>Rise/Fall Direction</label><select id="rfDirection"><option value="AUTO" selected>AUTO — Scanner Chooses</option><option value="CALL">RISE only</option><option value="PUT">FALL only</option></select></div>
+<div id="accumWrap" style="display:none">
+<div class="row"><div class="field"><label>Accumulator Growth Rate</label><select id="growthRate"><option value="0.01">1%</option><option value="0.02" selected>2%</option><option value="0.03">3%</option><option value="0.04">4%</option><option value="0.05">5%</option></select></div><div class="field"><label>Take Profit ($)</label><input id="accTakeProfit" type="number" min="0" step="0.01" value="1.00"></div></div>
+</div>
+<div class="row">
+<div class="field"><label>Stake per Contract ($)</label><input id="stake" type="number" min="0.35" step="0.01" value="0.35"></div>
+<div class="field"><label>Duration (ticks)</label><input id="duration" type="number" min="1" max="10" step="1" value="1"></div>
+</div>
+<div class="field"><label>Lookback Ticks</label><input id="lookback" type="number" min="20" max="1000" value="100"></div>
+<div class="field"><label>Minimum Signal Strength %</label><input id="confidence" type="number" min="0" max="100" value="70"></div>
+<div class="field"><label>Minimum Observed Count Per Digit</label><input id="minDigitCount" type="number" min="1" max="20" value="2"></div>
+<div class="toggle"><span>Auto Trading</span><input id="auto" type="checkbox" checked></div><div class="toggle"><span>Auto Start After Connect (DEMO)</span><input id="autoStart" type="checkbox" checked></div>
+<div class="toggle"><span>SPAM MODE</span><input id="spam" type="checkbox"></div>
+<div class="field"><label>Spam Count — all contracts submitted from one qualifying signal</label><input id="spamCount" type="number" min="1" max="25" value="5"></div>
+<div class="toggle"><span>One Signal Per Tick</span><input id="oneSignal" type="checkbox" checked></div>
+<div class="buttons"><button class="gold" id="startBtn">START BOT</button><button class="dark" id="stopBtn">STOP BOT</button></div>
+<div class="note">There is intentionally no manual trade button. START BOT activates scanning. The scanner can discover every currently active symbol that supports the selected strategy, stream them simultaneously, score them independently, and automatically trade the strongest qualifying symbol. Digits uses digit frequency, Rise/Fall uses directional imbalance, and Accumulator uses recent price stability/range behavior. AUTO selects the strongest qualifying symbol.</div>
+</div>
+</div>
+
+<div>
+<div class="card">
+<h3>Live Stats</h3><div class="kpis">
+<div class="kpi"><small>Ticks</small><b id="ticks">0</b></div><div class="kpi"><small>Trades</small><b id="trades">0</b></div><div class="kpi"><small>Wins</small><b id="wins">0</b></div><div class="kpi"><small>Losses</small><b id="losses">0</b></div><div class="kpi"><small>Profit</small><b id="profit">$0.00</b></div>
+</div>
+</div>
+
+<div class="card" style="margin-top:14px">
+<h3>Digit Distribution</h3><div id="digits" class="digits"></div>
+<div class="signal"><div id="signalTitle"><strong>WAITING FOR DATA</strong></div><div id="signalMeta" class="meta">Connect and start the bot to build the sample.</div></div>
+</div>
+
+<div class="card" style="margin-top:14px">
+<h3>Trade History</h3>
+<div class="historyWrap"><table class="history"><thead><tr><th>Time</th><th>Symbol</th><th>Contract</th><th>Barrier</th><th>Stake</th><th>Status</th><th>Profit</th><th>Contract ID</th></tr></thead><tbody id="historyBody"></tbody></table></div>
+<div class="note">Every entered contract is recorded here. Pending trades update to WON/LOST when Deriv returns the final contract result.</div>
+</div>
+
+<div class="card" style="margin-top:14px">
+<h3>Status Log</h3><div id="log" class="log"></div><button class="redbtn" style="margin-top:8px;width:100%" id="clearLog">CLEAR LOG</button>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let tradeWS=null,connected=false,botRunning=false,marketReady=false,tradeReady=false;
+let tickCount=0,trades=0,wins=0,losses=0,profit=0,reqSeq=100,lastSignalEpoch=null;
+let proposalJobs=new Map(),contractSeen=new Set(),selectedAccount=null;
+let userDisconnected=true,reconnectTimer=null,reconnectAttempts=0,pingTimer=null,userStopped=false;
+let historyRows=new Map(), lastFiredKey=null, signalArmed=true;
+let symbols=[], marketData=new Map(), tickSubIds=new Set(), accountCurrency='USD';
+
+function log(msg,cls=""){const d=document.createElement("div");d.className=cls;d.textContent=`[${new Date().toLocaleTimeString()}] ${msg}`;$("log").prepend(d)}
+function setStatus(on,text){connected=on;$("dot").className="dot"+(on?" on":"");$("connText").textContent=text}
+function updateStats(){$("ticks").textContent=tickCount;$('trades').textContent=trades;$('wins').textContent=wins;$('losses').textContent=losses;$('profit').textContent=(profit>=0?"+":"")+"$"+profit.toFixed(2)}
+function nextReq(){return ++reqSeq}
+function sendTrade(o){if(tradeWS&&tradeWS.readyState===WebSocket.OPEN){tradeWS.send(JSON.stringify(o));return true}log("TRADE SEND BLOCKED — authenticated WebSocket is not open.","loss");return false}
+function lastDigit(q){const s=String(q);const c=s.replace(/[^0-9]/g,"");return c?Number(c.slice(-1)):NaN}
+function ensureData(sym){if(!marketData.has(sym))marketData.set(sym,{quotes:[],digits:[]});return marketData.get(sym)}
+function activeSymbolsForStrategy(){
+ const st=$("strategy").value;
+ if(st==="DIGITS") return $("mode").value==="DIGITDIFF"?["DIGITDIFF"]:["DIGITMATCH"];
+ if(st==="RISEFALL") return ["CALL","PUT"];
+ return ["ACCU"];
+}
+function clearTickSubscriptions(){
+ if(!tradeWS||tradeWS.readyState!==WebSocket.OPEN)return;
+ for(const id of tickSubIds)sendTrade({forget:id,req_id:nextReq()});
+ tickSubIds.clear();
+}
+function populateSymbolDropdown(list){
+ const sel=$("symbol"), old=sel.value; sel.innerHTML="<option value=\"AUTO\">AUTO — SCAN ALL VALID PAIRS</option>";
+ for(const s of list){const o=document.createElement("option");o.value=s.symbol;o.textContent=`${s.name||s.symbol} (${s.symbol})`;sel.appendChild(o)}
+ if([...sel.options].some(o=>o.value===old))sel.value=old;else sel.value="AUTO";
+}
+function requestActiveSymbols(){
+ const types=activeSymbolsForStrategy();
+ log(`Discovering all active symbols for ${$("strategy").value}…`);
+ sendTrade({active_symbols:"brief",contract_type:types,req_id:nextReq()});
+}
+function subscribeAllValidSymbols(){
+ if(!tradeWS||tradeWS.readyState!==WebSocket.OPEN||!symbols.length)return;
+ clearTickSubscriptions();
+ const list=$("scanAll").checked?symbols:[symbols.find(x=>x.symbol===$("symbol").value)].filter(Boolean);
+ if(!list.length){log("No valid symbols selected for this strategy.","loss");return}
+ log(`Starting multi-pair scan across ${list.length} valid symbol(s)…`,"win");
+ list.forEach((x,i)=>setTimeout(()=>{
+   if(tradeWS&&tradeWS.readyState===WebSocket.OPEN)sendTrade({ticks:x.symbol,subscribe:1,req_id:nextReq()});
+ },i*15));
+}
+function symbolName(sym){const x=symbols.find(s=>s.symbol===sym);return x?.name||sym}
+function getSample(sym){const d=ensureData(sym),lb=Math.max(20,Number($("lookback").value)||100);return {d,arrQ:d.quotes.slice(-lb),arrD:d.digits.slice(-lb)}}
+function analyzeSymbol(sym){
+ const st=$("strategy").value,{d,arrQ,arrD}=getSample(sym); if(arrQ.length<Math.min(Number($("lookback").value)||100,20))return null;
+ const threshold=Number($("confidence").value)||70;
+ if(st==="DIGITS"){
+   const counts=Array(10).fill(0);arrD.forEach(x=>{if(Number.isInteger(x)&&x>=0&&x<=9)counts[x]++});
+   const minCount=Math.max(1,Math.min(20,Number($("minDigitCount").value)||2));const candidates=[];for(let i=0;i<10;i++)if(counts[i]>=minCount)candidates.push(i);if(!candidates.length)return null;
+   const rates=counts.map(c=>c/arrD.length);let target;
+   if($("mode").value==="DIGITDIFF")target=candidates.reduce((b,x)=>rates[x]<rates[b]?x:b,candidates[0]);else target=candidates.reduce((b,x)=>rates[x]>rates[b]?x:b,candidates[0]);
+   const rate=rates[target];let confidence;
+   if($("mode").value==="DIGITDIFF"){const deficit=Math.max(0,(0.10-rate)/0.10);confidence=Math.min(100,deficit*100*Math.min(1,arrD.length/100));}
+   else {const excess=Math.max(0,(rate-0.10)/0.10);confidence=Math.min(100,excess*100*Math.min(1,arrD.length/100));}
+   return {strategy:"DIGITS",symbol:sym,target,confidence,rate,count:counts[target],sample:arrD.length,qualifies:confidence>=threshold};
+ }
+ if(st==="RISEFALL"){
+   let up=0,down=0,flat=0;for(let i=1;i<arrQ.length;i++){if(arrQ[i]>arrQ[i-1])up++;else if(arrQ[i]<arrQ[i-1])down++;else flat++;}
+   const directional=up+down;if(directional<10)return null;let direction=up>=down?"CALL":"PUT";const pref=$("rfDirection").value;if(pref!=="AUTO")direction=pref;const chosen=direction==="CALL"?up:down;const confidence=chosen/directional*100;
+   return {strategy:"RISEFALL",symbol:sym,direction,confidence,up,down,flat,directional,sample:arrQ.length,qualifies:confidence>=threshold};
+ }
+ // Accumulator: rank recent price stability. This is a scanner heuristic, not a guarantee of future containment.
+ let moves=[];for(let i=1;i<arrQ.length;i++){const a=arrQ[i-1],b=arrQ[i];if(a!==0)moves.push(Math.abs((b-a)/a)*100)}
+ if(moves.length<10)return null;
+ const mean=moves.reduce((a,b)=>a+b,0)/moves.length;const sorted=[...moves].sort((a,b)=>a-b);const med=sorted[Math.floor(sorted.length/2)];
+ const growth=Number($("growthRate").value)||0.02;
+ // Higher score = calmer recent price path relative to the chosen accumulator growth rate.
+ const reference=Math.max(0.00001,growth*1.25);const stability=Math.max(0,Math.min(100,100-(mean/reference)*100));
+ const containment=arrQ.length>1?Math.max(0,Math.min(100,100-(Math.max(...arrQ)-Math.min(...arrQ))/Math.max(Math.abs(arrQ[arrQ.length-1]),1)*100/(growth*8))):0;
+ const confidence=Math.max(0,Math.min(100,stability*0.65+containment*0.35));
+ return {strategy:"ACCUMULATOR",symbol:sym,confidence,meanMove:mean,medianMove:med,growth,sample:arrQ.length,qualifies:confidence>=threshold};
+}
+function bestSignal(){
+ const candidates=symbols.map(x=>analyzeSymbol(x.symbol)).filter(Boolean);
+ if(!candidates.length)return null;
+ const eligible=candidates.filter(x=>x.qualifies);const pool=eligible.length?eligible:candidates;
+ pool.sort((a,b)=>b.confidence-a.confidence);return pool[0]||null;
+}
+function updateSignal(a){
+ if(!a){$("signalTitle").innerHTML="<strong>BUILDING MULTI-PAIR SAMPLE…</strong>";$("signalMeta").textContent=`Collecting ticks across ${symbols.length||0} valid pair(s) • total ticks ${tickCount}`;return}
+ const ok=a.qualifies;
+ if(a.strategy==="DIGITS"){$("signalTitle").innerHTML=`<strong>${ok?"SIGNAL":"SCANNING"}: ${$("mode").value==="DIGITDIFF"?"DIFFERS":"MATCHES"} ${a.target}</strong>`;$('signalMeta').textContent=`${symbolName(a.symbol)} • Digit ${a.target}: ${(a.rate*100).toFixed(1)}% • ${a.count}/${a.sample} ticks • strength ${a.confidence.toFixed(1)}%`}
+ else if(a.strategy==="RISEFALL"){$("signalTitle").innerHTML=`<strong>${ok?"SIGNAL":"SCANNING"}: ${a.direction==="CALL"?"RISE":"FALL"}</strong>`;$('signalMeta').textContent=`${symbolName(a.symbol)} • Rise ${a.up} • Fall ${a.down} • Flat ${a.flat} • strength ${a.confidence.toFixed(1)}%`}
+ else {$('signalTitle').innerHTML=`<strong>${ok?"SIGNAL":"SCANNING"}: ACCUMULATOR</strong>`;$('signalMeta').textContent=`${symbolName(a.symbol)} • avg move ${a.meanMove.toFixed(4)}% • growth ${(a.growth*100).toFixed(0)}% • stability strength ${a.confidence.toFixed(1)}%`}
+}
+function renderDigits(){
+ const a=$("strategy").value==="DIGITS"?bestSignal():null;const box=$("digits");box.innerHTML="";if(!a){for(let i=0;i<10;i++){const x=document.createElement("div");x.className="digit";x.innerHTML=`<div class="n">${i}</div><div class="p">—</div>`;box.appendChild(x)}return}
+ const d=ensureData(a.symbol),arr=d.digits.slice(-Math.max(1,Number($("lookback").value)||100)),counts=Array(10).fill(0);arr.forEach(x=>counts[x]++);for(let i=0;i<10;i++){const x=document.createElement("div");x.className="digit"+(i===a.target?" target":"");x.innerHTML=`<div class="n">${i}</div><div class="p">${(counts[i]/Math.max(1,arr.length)*100).toFixed(1)}%</div>`;box.appendChild(x)}
+}
+function addHistory(job,status="PENDING",profitValue=0,contractId=""){
+ const id="h"+Date.now()+"_"+Math.random().toString(36).slice(2);const tr=document.createElement("tr");tr.className=status.toLowerCase();
+ tr.innerHTML=`<td>${new Date().toLocaleTimeString()}</td><td>${symbolName(job.symbol)}</td><td>${job.label}</td><td>${job.barrier??job.growthRate??"—"}</td><td>$${Number(job.stake).toFixed(2)}</td><td class="statusCell">${status}</td><td class="profitCell">${profitValue?((profitValue>=0?"+":"")+"$"+Number(profitValue).toFixed(2)):"—"}</td><td class="contractCell">${contractId||"—"}</td>`;$('historyBody').prepend(tr);historyRows.set(contractId||id,{tr,job});return contractId||id;
+}
+function updateHistory(id,status,p){const r=historyRows.get(id);if(!r)return;r.tr.className=status.toLowerCase();r.tr.querySelector('.statusCell').textContent=status;r.tr.querySelector('.profitCell').textContent=(p>=0?'+':'')+'$'+Number(p).toFixed(2)}
+function clearHistory(){historyRows.clear();$('historyBody').innerHTML=''}
+function startBot(manual=true){
+ if(botRunning)return true;if(!marketReady||!tradeReady){log("Connect first so the authenticated tick/trading channel is active.","warn");return false}
+ if($("accountType").value==="real"&&manual&&!confirm("REAL ACCOUNT SELECTED. This bot can place real-money contracts automatically. Start anyway?"))return false;
+ botRunning=true;trades=0;wins=0;losses=0;profit=0;lastSignalEpoch=null;lastFiredKey=null;signalArmed=true;proposalJobs.clear();contractSeen.clear();clearHistory();updateStats();log(`BOT STARTED — scanning ${symbols.length} valid pair(s) • strongest qualifying pair will be traded`,"win");
+ const a=bestSignal();renderDigits();updateSignal(a);if(a&&a.qualifies)evaluateAndFire("START_"+Date.now(),true);return true;
+}
+async function connect(options={manual:true}){
+ const app=$("appId").value.trim(),token=$("token").value.trim(),type=$("accountType").value;if(!app||!token){log("Enter App ID and PAT first.","warn");return}
+ if(options.manual){userDisconnected=false;reconnectAttempts=0;clearTimeout(reconnectTimer)}disconnect(false);userDisconnected=false;userStopped=false;setStatus(false,`Loading ${type.toUpperCase()} account…`);log(`Loading ${type.toUpperCase()} account(s) from Deriv…`);
+ try{
+  const ar=await fetch("https://api.derivws.com/trading/v1/options/accounts",{headers:{Authorization:"Bearer "+token,"Deriv-App-ID":app}}),aj=await ar.json().catch(()=>({}));if(!ar.ok)throw new Error(aj?.errors?.[0]?.message||aj?.message||`Account lookup failed (${ar.status})`);const accounts=Array.isArray(aj?.data)?aj.data:[];const matches=accounts.filter(a=>String(a.account_type||a.type||"").toLowerCase()===type);const sel=$("accountId");sel.innerHTML="";if(!matches.length)throw new Error(`No ${type.toUpperCase()} Options account was returned for this PAT.`);
+  matches.forEach((a,i)=>{const id=a.account_id||a.id||a.loginid||a.accountId;const o=document.createElement('option');o.value=id;o.textContent=`${a.display_name||a.nickname||id}${a.currency?' • '+a.currency:''}${a.balance!=null?' • $'+Number(a.balance).toFixed(2):''}`;if(i===0)o.selected=true;sel.appendChild(o);if(i===0)accountCurrency=a.currency||'USD'});selectedAccount=sel.value;log(`${type.toUpperCase()} account selected: ${selectedAccount}`,"win");$("accountWarning").style.display=type==="real"?"block":"none";
+  const or=await fetch(`https://api.derivws.com/trading/v1/options/accounts/${encodeURIComponent(selectedAccount)}/otp`,{method:"POST",headers:{Authorization:"Bearer "+token,"Deriv-App-ID":app}}),oj=await or.json().catch(()=>({}));if(!or.ok)throw new Error(oj?.errors?.[0]?.message||oj?.message||`OTP request failed (${or.status})`);const url=oj?.data?.url;if(!url)throw new Error("OTP response did not contain a WebSocket URL.");
+  tradeWS=new WebSocket(url);tradeWS.onopen=()=>{tradeReady=true;marketReady=true;reconnectAttempts=0;setStatus(true,`${type.toUpperCase()} Connected`);log(`Authenticated ${type.toUpperCase()} trading WebSocket connected.`,"win");sendTrade({balance:1,subscribe:1,req_id:nextReq()});requestActiveSymbols();sendTrade({ping:1,req_id:nextReq()});clearInterval(pingTimer);pingTimer=setInterval(()=>sendTrade({ping:1,req_id:nextReq()}),45000)};
+  tradeWS.onmessage=e=>{let d;try{d=JSON.parse(e.data)}catch{return}handleTradeMessage(d)};tradeWS.onerror=()=>log("Trading WebSocket error — waiting for close details.","loss");tradeWS.onclose=e=>{tradeReady=false;marketReady=false;setStatus(false,`${type.toUpperCase()} Disconnected`);log(`Trading WebSocket closed (code ${e.code}${e.reason?": "+e.reason:""}).`,"loss");if(!userDisconnected){reconnectAttempts++;if(reconnectAttempts<=5){const delay=Math.min(15000,1000*Math.pow(2,reconnectAttempts-1));log(`Connection lost. Fresh OTP reconnect in ${Math.round(delay/1000)}s…`,"warn");reconnectTimer=setTimeout(()=>connect({manual:false}),delay)}else log("Automatic reconnect stopped after 5 attempts. Press CONNECT to try again.","loss")}};
+ }catch(err){log("CONNECTION ERROR: "+err.message,"loss");setStatus(false,"Connection failed")}
+}
+function disconnect(write=true){userDisconnected=true;botRunning=false;tradeReady=false;marketReady=false;selectedAccount=null;symbols=[];marketData.clear();tickSubIds.clear();setStatus(false,"Disconnected");clearTimeout(reconnectTimer);reconnectTimer=null;clearInterval(pingTimer);pingTimer=null;reconnectAttempts=0;const ws=tradeWS;tradeWS=null;try{ws?.close()}catch{}if(write)log("Disconnected.")}
+function evaluateAndFire(epoch,force=false){const a=bestSignal();renderDigits();updateSignal(a);updateStats();if(!botRunning||!$("auto").checked||!tradeReady||!a||!a.qualifies)return false;const key=a.strategy==='DIGITS'?`${a.symbol}:${a.target}`:a.strategy==='RISEFALL'?`${a.symbol}:${a.direction}`:`${a.symbol}:ACCU`;if(lastFiredKey!==null&&key!==lastFiredKey)signalArmed=true;if(!force&&!signalArmed)return false;if(!force&&$("oneSignal").checked&&lastSignalEpoch===epoch)return false;lastSignalEpoch=epoch;const n=$("spam").checked?Math.max(1,Math.min(25,Number($("spamCount").value)||1)):1;const sent=submitSignal(a,n);if(sent){lastFiredKey=key;signalArmed=false}return sent}
+function handleTick(t){if(!t||t.quote===undefined)return;const sym=t.symbol||t.echo_req?.ticks||t.passthrough?.symbol;if(!sym)return;const q=Number(t.quote);if(!Number.isFinite(q))return;const d=ensureData(sym);d.quotes.push(q);const dg=lastDigit(t.quote);if(Number.isInteger(dg))d.digits.push(dg);const maxKeep=Math.max(1000,Number($("lookback").value)*5);if(d.quotes.length>maxKeep)d.quotes.splice(0,d.quotes.length-maxKeep);if(d.digits.length>maxKeep)d.digits.splice(0,d.digits.length-maxKeep);tickCount++;if($("scanAll").checked&&lastFiredKey){if(lastFiredKey.startsWith(sym+':')&&(dg===Number(lastFiredKey.split(':')[1])||$("strategy").value!=='DIGITS'))signalArmed=true}evaluateAndFire(t.epoch??tickCount)}
+function submitSignal(a,count){if(!tradeWS||tradeWS.readyState!==WebSocket.OPEN){log("ORDER BLOCKED — authenticated trading WebSocket is not OPEN.","loss");return false}const stake=Math.max(.35,Number($("stake").value)||.35),duration=Math.max(1,Math.min(10,Number($("duration").value)||1));let type,barrier=null,label,extra={};if(a.strategy==='DIGITS'){type=$("mode").value;barrier=a.target;label=type==='DIGITDIFF'?"DIFFERS":"MATCHES"}else if(a.strategy==='RISEFALL'){type=a.direction;label=type==='CALL'?"RISE":"FALL"}else{type='ACCU';label='ACCUMULATOR';extra.growth_rate=Number($("growthRate").value)||0.02;const tp=Number($("accTakeProfit").value)||0;if(tp>0)extra.limit_order={take_profit:tp}}
+ log(`AUTO SIGNAL → ${label}${barrier!==null?' '+barrier:''} • ${symbolName(a.symbol)} • submitting ${count} contract(s)`,"warn");let sent=0;for(let i=0;i<count;i++){const id=nextReq(),job={stake,type,barrier,symbol:a.symbol,duration,label,growthRate:extra.growth_rate,signalTime:Date.now()};proposalJobs.set(id,job);const req={proposal:1,amount:stake,basis:'stake',contract_type:type,currency:accountCurrency||'USD',underlying_symbol:a.symbol,subscribe:1,req_id:id,...extra};if(type!=='ACCU'){req.duration=duration;req.duration_unit='t'}if(barrier!==null)req.barrier=String(barrier);if(sendTrade(req))sent++}log(`Proposal requests sent: ${sent}/${count}. Waiting for Deriv proposal responses…`,sent===count?'win':'loss');return sent===count}
+function handleTradeMessage(d){
+ if(d.error){const req=d.req_id,job=proposalJobs.get(req);if(job){proposalJobs.delete(req);addHistory(job,'REJECTED',0,'')}log('TRADE API: '+(d.error.message||d.error.code||'request rejected'),'loss');return}
+ if(d.msg_type==='ping'||d.msg_type==='balance')return;
+ if(d.msg_type==='active_symbols'){const arr=Array.isArray(d.active_symbols)?d.active_symbols:[];symbols=arr.filter(x=>x&&x.underlying_symbol&&x.exchange_is_open!==0&&!x.is_trading_suspended).map(x=>({symbol:x.underlying_symbol,name:x.underlying_symbol_name||x.underlying_symbol}));populateSymbolDropdown(symbols);log(`Found ${symbols.length} active symbol(s) supporting ${$("strategy").value}.`,symbols.length?'win':'loss');subscribeAllValidSymbols();return}
+ if(d.msg_type==='tick'){const sub=d.subscription?.id;if(sub)tickSubIds.add(sub);handleTick(d.tick);return}
+ if(d.msg_type==='proposal'){const job=proposalJobs.get(d.req_id);if(!job)return;proposalJobs.delete(d.req_id);const pid=d.proposal?.id,ask=Number(d.proposal?.ask_price||job.stake);if(!pid){addHistory(job,'REJECTED',0,'');log('Proposal returned without an ID.','loss');return}log(`PROPOSAL OK • ${job.label} • ${symbolName(job.symbol)} • ask $${ask.toFixed(2)} • payout $${Number(d.proposal?.payout||0).toFixed(2)} • sending BUY`,'win');const br=nextReq();proposalJobs.set(br,{...job,proposalId:pid});sendTrade({buy:pid,price:ask,req_id:br});return}
+ if(d.msg_type==='buy'){const br=d.req_id,job=proposalJobs.get(br);if(job)proposalJobs.delete(br);if(d.buy?.contract_id){trades++;updateStats();const cid=d.buy.contract_id;const hj=job||{stake:Number(d.buy.buy_price||0),type:'ACCU',label:'ACCUMULATOR',symbol:d.buy.underlying_symbol||$('symbol').value};addHistory(hj,'PENDING',0,cid);log(`TRADE ENTERED • ${hj.label} • ${symbolName(hj.symbol)} • contract ${cid}`,'win');if(!contractSeen.has(cid)){contractSeen.add(cid);sendTrade({proposal_open_contract:1,contract_id:cid,subscribe:1,req_id:nextReq()})}}return}
+ if(d.msg_type==='proposal_open_contract'){const c=d.proposal_open_contract;if(!c)return;const id=c.contract_id,status=String(c.status||'').toLowerCase();if((status==='won'||status==='lost')&&id&&!historyRows.get(id)?.finalized){const p=Number(c.profit||0);profit+=p;if(p>0){wins++;log(`WIN • +$${p.toFixed(2)}`,'win')}else{losses++;log(`LOSS • $${p.toFixed(2)}`,'loss')}updateStats();updateHistory(id,p>0?'WON':'LOST',p);const r=historyRows.get(id);if(r)r.finalized=true}}
+}
+$("connectBtn").onclick=()=>connect();$("disconnectBtn").onclick=()=>disconnect(true);
+$("accountType").onchange=()=>{if(connected||tradeReady){log('Disconnect before switching between DEMO and REAL.','warn');return}$("accountWarning").style.display=$("accountType").value==='real'?'block':'none'};
+$("startBtn").onclick=()=>startBot(true);$("stopBtn").onclick=()=>{botRunning=false;userStopped=true;log('BOT STOPPED — no new trades will be submitted until START BOT is pressed.','warn')};$("clearLog").onclick=()=>$("log").innerHTML='';
+$("scanAll").onchange=()=>{signalArmed=true;lastFiredKey=null;if(tradeReady)subscribeAllValidSymbols()};
+$("symbol").onchange=()=>{if(tradeReady&&!$("scanAll").checked)subscribeAllValidSymbols()};
+$("strategy").onchange=()=>{const st=$("strategy").value;$("digitModeWrap").style.display=st==='DIGITS'?'block':'none';$("rfModeWrap").style.display=st==='RISEFALL'?'block':'none';$("accumWrap").style.display=st==='ACCUMULATOR'?'block':'none';signalArmed=true;lastFiredKey=null;if(tradeReady){requestActiveSymbols()}renderDigits();updateSignal(bestSignal());log(`Strategy changed to ${st}. Scanner will reload only symbols valid for that strategy.`,'warn')};
+$("mode").onchange=()=>{signalArmed=true;lastFiredKey=null;if(tradeReady)requestActiveSymbols();renderDigits();updateSignal(bestSignal())};$("rfDirection").onchange=()=>{signalArmed=true;lastFiredKey=null;updateSignal(bestSignal())};$("lookback").oninput=()=>{renderDigits();updateSignal(bestSignal())};$("confidence").oninput=()=>updateSignal(bestSignal());$("minDigitCount").oninput=()=>{renderDigits();updateSignal(bestSignal())};
+renderDigits();updateStats();clearHistory();$("accountWarning").style.display='none';log('Ready. Select DEMO or REAL, CONNECT, then choose a strategy. The scanner can discover and scan all valid pairs for that strategy.');
+</script>
+</body>
+</html>
