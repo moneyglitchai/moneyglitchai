@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000">
+<title>MoneyGlitch AI — Deriv Digit Scanner</title>
+<style>
+:root{--bg:#050505;--panel:#111;--panel2:#181818;--gold:#ffd21a;--gold2:#f3b900;--white:#fff;--muted:#aaa;--green:#2ee66b;--red:#ff4d4d;--border:#5d4d00}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(#030303,#0b0b0b);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{max-width:980px;margin:auto;padding:14px}.brand{text-align:center;font-weight:900;font-size:25px;color:var(--gold);letter-spacing:.5px}.sub{text-align:center;color:#bbb;font-size:12px;margin:3px 0 14px}
+.card{background:linear-gradient(145deg,#151515,#0b0b0b);border:1px solid #383838;border-radius:16px;padding:13px;margin:10px 0;box-shadow:0 8px 25px #0008}
+h2{margin:0 0 10px;color:var(--gold);font-size:16px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+label{display:block;color:#ddd;font-size:11px;margin:0 0 5px}input,select{width:100%;height:42px;border-radius:22px;border:1px solid #766300;background:#242424;color:#fff;padding:0 13px;outline:none;font-size:14px}input:focus,select:focus{border-color:var(--gold)}
+button{border:0;border-radius:24px;height:44px;padding:0 18px;font-weight:900;cursor:pointer}.primary{background:var(--gold);color:#000}.danger{background:#4a1414;color:#fff;border:1px solid #9a2727}.ghost{background:#222;color:#fff;border:1px solid #555}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>*{flex:1;min-width:120px}
+.status{display:flex;align-items:center;gap:8px;font-weight:800}.dot{width:10px;height:10px;border-radius:50%;background:#777;box-shadow:0 0 10px #777}.dot.ok{background:var(--green);box-shadow:0 0 12px var(--green)}.dot.bad{background:var(--red);box-shadow:0 0 12px var(--red)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.stat{background:#1b1b1b;border:1px solid #333;border-radius:12px;padding:9px;text-align:center}.stat b{display:block;font-size:15px;margin-top:3px}.stat span{font-size:10px;color:#aaa}
+.log{height:170px;overflow:auto;background:#050505;border:1px solid #333;border-radius:12px;padding:9px;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#ddd}.log div{margin:0 0 4px}.oktxt{color:var(--green)}.err{color:#ff7070}.goldtxt{color:var(--gold)}
+table{width:100%;border-collapse:collapse;font-size:11px}th,td{padding:8px 5px;border-bottom:1px solid #292929;text-align:left}th{color:var(--gold)}.scroll{overflow:auto}
+.signal{font-size:22px;font-weight:900;text-align:center;padding:13px;border:1px solid #4b4b4b;border-radius:14px;background:#090909}.rise{color:var(--green)}.fall{color:#ff7070}.wait{color:var(--gold)}
+.small{font-size:11px;color:#999;line-height:1.45}.hidden{display:none!important}
+@media(max-width:600px){.grid,.grid3{grid-template-columns:1fr 1fr}.stats{grid-template-columns:repeat(2,1fr)}.row button{min-width:145px}.brand{font-size:22px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">MONEYGLITCH AI</div>
+  <div class="sub">DERIV DIGIT OVER / UNDER SCANNER • DEMO FIRST</div>
+
+  <section class="card">
+    <h2>Connection</h2>
+    <div class="grid">
+      <div><label>Deriv App ID</label><input id="appId" inputmode="numeric" placeholder="New developers.deriv.com App ID"></div>
+      <div><label>API Token / PAT</label><input id="token" type="password" autocomplete="off" placeholder="Paste your Deriv token"></div>
+      <div><label>Demo Account ID (optional)</label><input id="accountId" placeholder="e.g. DOT..."></div>
+      <div><label>Connection</label><div class="status" style="height:42px"><i id="dot" class="dot"></i><span id="connText">Disconnected</span></div></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="primary" id="connectBtn">CONNECT</button>
+      <button class="danger" id="disconnectBtn">DISCONNECT</button>
+      <button class="ghost" id="clearBtn">CLEAR LOG</button>
+    </div>
+    <div class="small" style="margin-top:9px">This build uses Deriv's current REST → OTP → WebSocket authentication flow. Your token stays in this browser tab and is never written into the HTML.</div>
+  </section>
+
+  <section class="card">
+    <h2>Controls</h2>
+    <div class="grid3">
+      <div><label>Scanner Duration (minutes)</label><input id="scanMin" type="number" min="1" value="10"></div>
+      <div><label>Stake (USD)</label><input id="stake" type="number" min=".35" step=".01" value=".35"></div>
+      <div><label>Duration</label><input id="duration" type="number" min="1" value="1"></div>
+      <div><label>Duration Unit</label><select id="durationUnit"><option value="t">Ticks</option><option value="s">Seconds</option></select></div>
+      <div><label>Contract</label><select id="contract"><option value="DIGITOVER">Digit Over</option><option value="DIGITUNDER">Digit Under</option></select></div>
+      <div><label>Barrier / Digit</label><select id="barrier"></select></div>
+      <div><label>Symbol</label><select id="symbol">
+        <option value="JD10">Jump 10</option><option value="JD25">Jump 25</option><option value="JD50">Jump 50</option><option value="JD75">Jump 75</option><option value="JD100">Jump 100</option>
+      </select></div>
+      <div><label>Reversal</label><select id="reversal"><option value="off">OFF</option><option value="on">ON</option></select></div>
+      <div><label>Auto Trade</label><select id="autoTrade"><option value="off">OFF — SCAN ONLY</option><option value="on">ON — DEMO</option></select></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="primary" id="startBtn">START SCANNER</button>
+      <button class="danger" id="stopBtn">STOP</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Live Signal</h2>
+    <div id="signal" class="signal wait">WAITING FOR DATA</div>
+    <div class="stats" style="margin-top:9px">
+      <div class="stat"><span>SYMBOL</span><b id="sSymbol">—</b></div>
+      <div class="stat"><span>LAST DIGIT</span><b id="lastDigit">—</b></div>
+      <div class="stat"><span>OVER %</span><b id="overPct">—</b></div>
+      <div class="stat"><span>UNDER %</span><b id="underPct">—</b></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Bot Stats</h2>
+    <div class="stats">
+      <div class="stat"><span>TICKS</span><b id="ticks">0</b></div>
+      <div class="stat"><span>TRADES</span><b id="trades">0</b></div>
+      <div class="stat"><span>WINS</span><b id="wins">0</b></div>
+      <div class="stat"><span>LOSSES</span><b id="losses">0</b></div>
+      <div class="stat"><span>WIN RATE</span><b id="winrate">0%</b></div>
+      <div class="stat"><span>PROFIT</span><b id="profit">$0.00</b></div>
+      <div class="stat"><span>BALANCE</span><b id="balance">—</b></div>
+      <div class="stat"><span>RUNTIME</span><b id="runtime">00:00</b></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Status Log</h2>
+    <div id="log" class="log"></div>
+  </section>
+
+  <section class="card">
+    <h2>Trade History</h2>
+    <div class="scroll"><table><thead><tr><th>SYMBOL</th><th>DIR</th><th>STAKE</th><th>RESULT</th><th>PROFIT</th><th>TIME</th></tr></thead><tbody id="history"></tbody></table></div>
+  </section>
+</div>
+
+<script>
+'use strict';
+
+const API='https://api.derivws.com';
+const PUBLIC_WS='wss://api.derivws.com/trading/v1/options/ws/public';
+const state={
+  ws:null, publicWs:null, connected:false, connecting:false, running:false,
+  accountId:'', symbols:new Map(), req:0, reconnectTimer:null, reconnectAttempt:0,
+  prices:[], ticks:0,trades:0,wins:0,losses:0,profit:0,startTime:0,runTimer:null,
+  pending:new Map(), contracts:new Map(), intentionalClose:false
+};
+
+const $=id=>document.getElementById(id);
+for(let i=0;i<=9;i++){const o=document.createElement('option');o.value=i;o.textContent=i;$('barrier').appendChild(o)}
+$('barrier').value='5';
+
+function log(msg,type=''){
+  const d=document.createElement('div'); d.textContent='['+new Date().toLocaleTimeString()+'] '+msg;
+  if(type==='error') d.className='err'; else if(type==='ok') d.className='oktxt'; else if(type==='gold') d.className='goldtxt';
+  $('log').prepend(d);
+}
+function setConn(ok,text){$('dot').className='dot '+(ok?'ok':'bad');$('connText').textContent=text}
+function reqId(){return ++state.req}
+function send(obj){
+  if(!state.ws || state.ws.readyState!==WebSocket.OPEN) throw new Error('Authenticated WebSocket is not open');
+  obj.req_id=reqId(); state.ws.send(JSON.stringify(obj)); return obj.req_id;
+}
+function fmtMoney(n){return '$'+Number(n||0).toFixed(2)}
+function updateStats(){
+  $('ticks').textContent=state.ticks;$('trades').textContent=state.trades;
+  $('wins').textContent=state.wins;$('losses').textContent=state.losses;
+  $('winrate').textContent=state.trades?((state.wins/state.trades)*100).toFixed(1)+'%':'0%';
+  $('profit').textContent=fmtMoney(state.profit);
+  if(state.startTime)$('runtime').textContent=new Date(state.startTime).toLocaleTimeString();
+}
+function resetStats(){
+  state.ticks=state.trades=state.wins=state.losses=0;state.profit=0;state.prices=[];
+  $('history').innerHTML='';$('signal').textContent='WAITING FOR DATA';$('signal').className='signal wait';
+  $('sSymbol').textContent='—';$('lastDigit').textContent='—';$('overPct').textContent='—';$('underPct').textContent='—';updateStats();
+}
+function lastDigitOf(q){
+  const s=String(q);
+  const clean=s.replace(/[^0-9]/g,'');
+  return clean?Number(clean.slice(-1)):null;
+}
+function processTick(t){
+  const q=Number(t.quote); if(!Number.isFinite(q))return;
+  const digit=lastDigitOf(q); if(digit===null)return;
+  state.ticks++; state.prices.push(digit); if(state.prices.length>100)state.prices.shift();
+  const sym=t.symbol||$('symbol').value;$('sSymbol').textContent=sym;$('lastDigit').textContent=digit;
+  const b=Number($('barrier').value), over=state.prices.filter(x=>x>b).length, under=state.prices.filter(x=>x<b).length, total=over+under;
+  const op=total?over/total*100:0,up=total?under/total*100:0;
+  $('overPct').textContent=op.toFixed(1)+'%';$('underPct').textContent=up.toFixed(1)+'%';
+  let direction=op>=up?'OVER':'UNDER';
+  if($('reversal').value==='on')direction=direction==='OVER'?'UNDER':'OVER';
+  $('signal').textContent=direction+' • digit '+digit+' • '+Math.max(op,up).toFixed(1)+'% bias';
+  $('signal').className='signal '+(direction==='OVER'?'rise':'fall');
+  updateStats();
+  if(state.running && $('autoTrade').value==='on') maybeTrade(direction);
+}
+function subscribeTicks(){
+  const sym=$('symbol').value;
+  try{
+    send({ticks:sym,subscribe:1});
+    send({ticks_history:sym,count:100,end:'latest',style:'ticks'});
+    log('Subscribed to '+sym+' ticks.','ok');
+  }catch(e){log(e.message,'error')}
+}
+async function getOtpAndConnect(){
+  const token=$('token').value.trim(), app=$('appId').value.trim(), supplied=$('accountId').value.trim();
+  if(!token){log('API Token is required for authenticated trading.','error');setConn(false,'Token required');return}
+  if(!app){log('Current Deriv API requires a new App ID for PAT authentication.','error');setConn(false,'App ID required');return}
+  state.connecting=true;state.intentionalClose=false;setConn(false,'Authenticating…');log('Requesting authenticated WebSocket URL…','gold');
+  try{
+    let accountId=supplied;
+    if(!accountId){
+      const r=await fetch(API+'/trading/v1/options/accounts',{headers:{'Authorization':'Bearer '+token,'Deriv-App-ID':app}});
+      const j=await r.json(); if(!r.ok)throw new Error(j?.errors?.[0]?.message||'Could not load accounts');
+      const accounts=j.data?.accounts||j.data||[];
+      const demo=accounts.find(a=>String(a.account_type||a.type||'').toLowerCase()==='demo')||accounts[0];
+      accountId=demo?.account_id||demo?.id;
+      if(!accountId)throw new Error('No Options account ID returned. Enter your Demo Account ID.');
+      $('accountId').value=accountId;
+    }
+    state.accountId=accountId;
+    const r=await fetch(API+'/trading/v1/options/accounts/'+encodeURIComponent(accountId)+'/otp',{
+      method:'POST',headers:{'Authorization':'Bearer '+token,'Deriv-App-ID':app}
+    });
+    const j=await r.json(); if(!r.ok)throw new Error(j?.errors?.[0]?.message||'OTP request failed');
+    const url=j?.data?.url;if(!url)throw new Error('Deriv did not return a WebSocket URL');
+    openAuthenticated(url);
+  }catch(e){
+    state.connecting=false;setConn(false,'Connection failed');log(e.message,'error');
+  }
+}
+function openAuthenticated(url){
+  try{if(state.ws){state.ws.onclose=null;state.ws.close()}}catch{}
+  const ws=new WebSocket(url);state.ws=ws;
+  ws.onopen=()=>{
+    state.connected=true;state.connecting=false;state.reconnectAttempt=0;setConn(true,'Connected');
+    log('WebSocket Connected — authenticated demo session.','ok');
+    try{send({balance:1,subscribe:1})}catch{}
+    subscribeTicks();
+  };
+  ws.onmessage=e=>handleMessage(e.data);
+  ws.onerror=()=>{log('WebSocket error — check App ID, token, account and network.','error')};
+  ws.onclose=e=>{
+    state.connected=false;setConn(false,'Disconnected');log('WebSocket closed ('+(e.code||'unknown')+').','error');
+    if(!state.intentionalClose && state.running) scheduleReconnect();
+  };
+}
+function scheduleReconnect(){
+  clearTimeout(state.reconnectTimer);
+  const delay=Math.min(15000,1000*Math.pow(2,state.reconnectAttempt++));
+  log('Retrying connection in '+Math.round(delay/1000)+'s…','gold');
+  state.reconnectTimer=setTimeout(()=>getOtpAndConnect(),delay);
+}
+function handleMessage(raw){
+  let d;try{d=JSON.parse(raw)}catch{return}
+  if(d.error){log((d.error.code||'API')+': '+(d.error.message||'Request failed'),'error');return}
+  if(d.msg_type==='balance'){const b=d.balance?.balance; if(b!==undefined)$('balance').textContent=Number(b).toFixed(2)+' '+(d.balance.currency||'USD');}
+  if(d.msg_type==='tick'){processTick(d.tick)}
+  if(d.msg_type==='history' && Array.isArray(d.history?.prices)){
+    // Historical data is only used as a warm-up; live ticks remain the source of signals.
+    log('Loaded '+d.history.prices.length+' historical ticks.','ok');
+    d.history.prices.forEach(p=>{const digit=lastDigitOf(p);if(digit!==null)state.prices.push(digit)});state.prices=state.prices.slice(-100);
+  }
+  if(d.msg_type==='proposal'){
+    const id=d.proposal?.id;if(id){state.pending.set(d.req_id,{proposalId:id});}
+  }
+  if(d.msg_type==='buy'){
+    const c=d.buy; if(c){state.trades++;updateStats();log('Contract purchased: '+(c.contract_id||'—'),'ok');watchContract(c.contract_id);}
+  }
+  if(d.msg_type==='proposal_open_contract'){
+    const c=d.proposal_open_contract;if(!c)return;
+    if(c.is_sold || c.status==='won' || c.status==='lost' || c.status==='expired'){
+      const p=Number(c.profit||0);state.profit+=p;
+      if(p>=0)state.wins++;else state.losses++;
+      addHistory(c,p);updateStats();
+    }
+  }
+}
+function maybeTrade(direction){
+  // Guardrail: never stack trades while another contract is open/pending.
+  if(state.contracts.size>0 || state.pending.size>0)return;
+  const sym=$('symbol').value, unit=$('durationUnit').value, duration=Number($('duration').value), barrier=Number($('barrier').value);
+  const type=direction==='OVER'?'DIGITOVER':'DIGITUNDER';
+  try{
+    const id=send({proposal:1,amount:Number($('stake').value),basis:'stake',contract_type:type,currency:'USD',duration,duration_unit:unit,barrier:String(barrier),underlying_symbol:sym});
+    state.pending.set(id,{type,sym,barrier});
+    setTimeout(()=>state.pending.delete(id),10000);
+    log('Requesting '+type+' proposal on '+sym+'…','gold');
+  }catch(e){log(e.message,'error')}
+}
+function watchContract(id){
+  if(!id)return;state.contracts.set(String(id),true);
+  try{send({proposal_open_contract:1,contract_id:id,subscribe:1})}catch{}
+}
+function addHistory(c,p){
+  const tr=document.createElement('tr');
+  const direction=c.contract_type||'—';
+  tr.innerHTML='<td>'+escapeHtml(c.underlying||$('symbol').value)+'</td><td>'+escapeHtml(direction)+'</td><td>'+fmtMoney(c.buy_price||$('stake').value)+'</td><td>'+(p>=0?'WIN':'LOSS')+'</td><td>'+fmtMoney(p)+'</td><td>'+new Date().toLocaleTimeString()+'</td>';
+  $('history').prepend(tr);
+  if(c.contract_id)state.contracts.delete(String(c.contract_id));
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+
+function connect(){getOtpAndConnect()}
+function disconnect(){
+  state.intentionalClose=true;state.running=false;clearTimeout(state.reconnectTimer);
+  if(state.ws){try{state.ws.close()}catch{}}
+  state.ws=null;state.connected=false;state.connecting=false;setConn(false,'Disconnected');log('Disconnected.','gold');
+}
+function start(){
+  state.running=true;state.startTime=Date.now();resetStats();log('Bot Start — scanner running.','ok');
+  if(!state.connected)connect(); else subscribeTicks();
+  clearInterval(state.runTimer);state.runTimer=setInterval(()=>{
+    const secs=Math.floor((Date.now()-state.startTime)/1000),m=String(Math.floor(secs/60)).padStart(2,'0'),s=String(secs%60).padStart(2,'0');$('runtime').textContent=m+':'+s;
+  },1000);
+  const mins=Math.max(1,Number($('scanMin').value)||10);setTimeout(()=>{if(state.running){log('Scanner duration reached.','gold');stop()}},mins*60000);
+}
+function stop(){state.running=false;clearInterval(state.runTimer);$('signal').textContent='SCANNER STOPPED';$('signal').className='signal wait';log('Bot Stop.','gold')}
+
+$('connectBtn').onclick=connect;$('disconnectBtn').onclick=disconnect;$('startBtn').onclick=start;$('stopBtn').onclick=stop;
+$('clearBtn').onclick=()=>$('log').innerHTML='';
+$('symbol').onchange=()=>{if(state.connected)subscribeTicks()};
+$('reversal').onchange=()=>log('Reversal '+$('reversal').value.toUpperCase(),'gold');
+window.addEventListener('beforeunload',()=>{state.intentionalClose=true;try{state.ws?.close()}catch{}});
+
+setConn(false,'Disconnected');log('Ready. Enter your current Deriv App ID + PAT token.','gold');
+</script>
+</body>
+</html>
